@@ -25,6 +25,7 @@ local state = {
     preview_renderer = nil,
     preview_texture = nil,
     is_preview_open = false,
+    is_preview_hidden = false,  -- 预览窗口是否隐藏
     show_selector = false,
     last_error = nil,
     config_loaded = false,
@@ -226,6 +227,61 @@ local function switch_to_editor_preview()
     GlobalContext.is_preview_in_editor = true
 end
 
+-- 隐藏预览窗口
+local function hide_preview_window()
+    if state.preview_window and state.is_preview_open then
+        sdl.HideWindow(state.preview_window)
+        state.is_preview_hidden = true
+    end
+end
+
+-- 显示预览窗口
+local function show_preview_window()
+    if state.preview_window and state.is_preview_open then
+        sdl.ShowWindow(state.preview_window)
+        sdl.RaiseWindow(state.preview_window)
+        state.is_preview_hidden = false
+    end
+end
+
+-- 切换预览窗口显示/隐藏
+local function toggle_preview_visibility()
+    if state.is_preview_hidden then
+        show_preview_window()
+    else
+        hide_preview_window()
+    end
+end
+
+-- 切换预览窗口全屏模式
+local function toggle_preview_fullscreen()
+    if not state.preview_window or not state.is_preview_open then
+        return
+    end
+    
+    state.window_fullscreen = not state.window_fullscreen
+    
+    if state.window_fullscreen then
+        sdl.SetWindowFullscreen(state.preview_window, sdl.WindowFlags.FULLSCREEN_DESKTOP)
+    else
+        sdl.SetWindowFullscreen(state.preview_window, 0)
+        -- 恢复无边框或普通窗口
+        if state.window_borderless then
+            local display = state.displays[state.selected_display + 1]
+            if display then
+                sdl.SetWindowPosition(state.preview_window, display.x, display.y)
+                sdl.SetWindowSize(state.preview_window, display.width, display.height)
+            end
+        end
+    end
+end
+
+-- 关闭预览窗口（点击关闭按钮）
+local function close_preview_window()
+    destroy_preview_window()
+    GlobalContext.is_preview_in_editor = true
+end
+
 -- 初始化
 module.on_enter = function()
     load_config()
@@ -314,13 +370,45 @@ module.on_update = function(self, delta)
         
         -- 状态和操作按钮
         if state.is_preview_open then
-            imgui.TextColored(imgui.ImVec4(0.2, 0.9, 0.2, 1), "● 独立预览窗口已打开")
+            if state.is_preview_hidden then
+                imgui.TextColored(imgui.ImVec4(0.9, 0.7, 0.2, 1), "● 独立预览窗口已隐藏")
+            else
+                imgui.TextColored(imgui.ImVec4(0.2, 0.9, 0.2, 1), "● 独立预览窗口已打开")
+            end
             
-            if imgui.Button("关闭预览窗口") then
-                switch_to_editor_preview()
+            -- 隐藏/显示按钮
+            if state.is_preview_hidden then
+                if imgui.Button("显示窗口") then
+                    show_preview_window()
+                end
+            else
+                if imgui.Button("隐藏窗口") then
+                    hide_preview_window()
+                end
             end
             
             imgui.SameLine()
+            
+            -- 全屏切换按钮
+            if state.window_fullscreen then
+                if imgui.Button("退出全屏") then
+                    toggle_preview_fullscreen()
+                end
+            else
+                if imgui.Button("全屏") then
+                    toggle_preview_fullscreen()
+                end
+            end
+            
+            imgui.SameLine()
+            
+            -- 关闭按钮
+            if imgui.Button("关闭窗口") then
+                close_preview_window()
+            end
+            
+            imgui.Spacing()
+            
             if imgui.Button("移动到选中显示器") then
                 destroy_preview_window()
                 create_preview_window()
@@ -428,6 +516,26 @@ end
 
 module.close_preview = function()
     destroy_preview_window()
+end
+
+module.hide_preview = function()
+    hide_preview_window()
+end
+
+module.show_preview = function()
+    show_preview_window()
+end
+
+module.toggle_preview_visibility = function()
+    toggle_preview_visibility()
+end
+
+module.toggle_fullscreen = function()
+    toggle_preview_fullscreen()
+end
+
+module.is_preview_hidden = function()
+    return state.is_preview_hidden
 end
 
 module.open_preview_on_display = function(display_index)

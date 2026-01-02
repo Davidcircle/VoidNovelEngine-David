@@ -45,6 +45,9 @@ module.external_preview_window = nil
 module.external_preview_renderer = nil
 module.external_preview_texture = nil
 
+-- 主窗口是否最大化
+module.is_window_maximized = false
+
 -- 切换预览模式
 module.toggle_preview_mode = function()
     module.is_preview_in_editor = not module.is_preview_in_editor

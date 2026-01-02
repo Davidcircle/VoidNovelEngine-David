@@ -186,6 +186,73 @@ VoidNovelEngine 视觉小说引擎
                 end
             imgui.EndMenu()
         end
+        
+        -- 右侧窗口控制按钮（最小化、全屏、关闭）
+        local avail_width = imgui.GetContentRegionAvail().x
+        local button_width = 30
+        local button_spacing = 5
+        local total_buttons_width = button_width * 3 + button_spacing * 2
+        
+        local cursor_pos = imgui.GetCursorPos()
+        imgui.SetCursorPos(imgui.ImVec2(cursor_pos.x + avail_width - total_buttons_width - 10, cursor_pos.y))
+        
+        -- 最小化按钮
+        imgui.PushStyleColor(imgui.ImGuiCol.Button, imgui.ImVec4(0, 0, 0, 0))
+        imgui.PushStyleColor(imgui.ImGuiCol.ButtonHovered, imgui.ImVec4(0.3, 0.3, 0.3, 1))
+        imgui.PushStyleColor(imgui.ImGuiCol.ButtonActive, imgui.ImVec4(0.2, 0.2, 0.2, 1))
+        
+        if imgui.Button("—", imgui.ImVec2(button_width, 0)) then
+            sdl.MinimizeWindow(GlobalContext.window)
+        end
+        if imgui.IsItemHovered() then
+            imgui.BeginTooltip()
+            imgui.Text("最小化")
+            imgui.EndTooltip()
+        end
+        
+        imgui.SameLine(0, button_spacing)
+        
+        -- 全屏/还原按钮
+        local fullscreen_icon = GlobalContext.is_window_maximized and "❐" or "□"
+        
+        if imgui.Button(fullscreen_icon, imgui.ImVec2(button_width, 0)) then
+            if GlobalContext.is_window_maximized then
+                sdl.RestoreWindow(GlobalContext.window)
+                GlobalContext.is_window_maximized = false
+            else
+                sdl.MaximizeWindow(GlobalContext.window)
+                GlobalContext.is_window_maximized = true
+            end
+        end
+        if imgui.IsItemHovered() then
+            imgui.BeginTooltip()
+            if GlobalContext.is_window_maximized then
+                imgui.Text("还原")
+            else
+                imgui.Text("最大化")
+            end
+            imgui.EndTooltip()
+        end
+        
+        imgui.SameLine(0, button_spacing)
+        
+        -- 关闭按钮
+        imgui.PushStyleColor(imgui.ImGuiCol.ButtonHovered, imgui.ImVec4(0.8, 0.2, 0.2, 1))
+        imgui.PushStyleColor(imgui.ImGuiCol.ButtonActive, imgui.ImVec4(0.6, 0.1, 0.1, 1))
+        
+        if imgui.Button("×", imgui.ImVec2(button_width, 0)) then
+            local quit_event = sdl.Event()
+            quit_event.type = sdl.EventType.QUIT
+            sdl.PushEvent(quit_event)
+        end
+        if imgui.IsItemHovered() then
+            imgui.BeginTooltip()
+            imgui.Text("关闭")
+            imgui.EndTooltip()
+        end
+        
+        imgui.PopStyleColor(5)
+        
         imgui.EndMenuBar()
     end
 end
